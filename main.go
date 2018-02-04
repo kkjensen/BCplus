@@ -245,18 +245,18 @@ func eventLoop() {
 
 func main() {
 	flag.StringVar(&dataDir, "d", defaultDataDir(),
-		"directory to store BC+ data")
+		"Verzeichnis zum Speichern der BC+ Daten")
 	flag.StringVar(&jrnlDir, "j", defaultJournalDir(),
-		"directory with journal files")
+		"Verzeichnis mit den E:D Journal Dateien")
 	flag.UintVar(&webGuiPort, "p", 1337,
-		"web GUI port")
-	pun := flag.Bool("l", false, "pickup newest existing log")
-	verbose := flag.Bool("v", false, "verbose logging")
-	verybose := flag.Bool("vv", false, "very verbose logging")
-	flag.BoolVar(&acceptHistory, "hist", false, "accept historic events")
-	loadCmdr := flag.String("cmdr", "", "preload commander")
+		"Portnummer für die Web-GUI")
+	pun := flag.Bool("l", false, "Lade beim Start die letze Journal Datei")
+	verbose := flag.Bool("v", false, "Ausführliches Logging")
+	verybose := flag.Bool("vv", false, "Sehr ausführliches logging")
+	flag.BoolVar(&acceptHistory, "hist", false, "Akzeptiere vergangene Ereignisse")
+	loadCmdr := flag.String("cmdr", "", "Lade beim Start die Daten des Kommandanten")
 	promptKey := flag.Bool("pmk", false, "prompt for credential master key")
-	showHelp := flag.Bool("h", false, "show help")
+	showHelp := flag.Bool("h", false, "Zeige Hilfe an")
 	flag.Parse()
 	if *showHelp {
 		BCpDescribe(os.Stdout)

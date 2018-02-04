@@ -175,7 +175,7 @@ var webGuiTBD = gx.Print{"???"}
 var webGuiNOC = gx.Print{"–"}
 var webGuiPort uint
 var webGuiTopics []string
-var wuiL7d = message.NewPrinter(language.Make("en"))
+var wuiL7d = message.NewPrinter(language.Make("de"))
 
 func nmap(nm *namemap.FromTo, term string) gx.Content {
 	str, _ := nm.Map(term)

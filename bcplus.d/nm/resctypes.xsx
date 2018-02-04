@@ -1,4 +1,4 @@
 [\type lang:]
-(raw "Rawmaterial")
-(man "Manufactured")
-(enc "Encoded Data")
+(raw "Rohmaterial")
+(man "Teile")
+(enc "Kodierte Daten")

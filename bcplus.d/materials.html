@@ -37,17 +37,17 @@ main .mdmnd {
 		<tr> 
 			<th rowspan="2">⌬</th><th rowspan="2">Material</th>
 			<th rowspan="2"><select id="flt-have" onchange="reFilter()">
-				<option value="alor">All</option>
-				<option value="alnd">All and</option>
-				<option value="hvnd">Have and</option>
-				<option value="hvor">Have or</option>
-				<option value="nond">None and</option>
-				<option value="noor">None or</option>
+				<option value="alor">Alle</option>
+				<option value="alnd">Alle und</option>
+				<option value="hvnd">Vorh. und</option>
+				<option value="hvor">Vorh. oder</option>
+				<option value="nond">Keine und</option>
+				<option value="noor">Keine oder</option>
 			</select></th>
 			<th rowspan="2"><input id="flt-need" type="checkbox" name="shwnd" checked
-			                       onchange="reFilter()">Need</th>
-			<th rowspan="2" colspan="2">Sorce</th>
-			<th rowspan="2">Manual<br>Demand</th>
+			                       onchange="reFilter()">Bedarf</th>
+			<th rowspan="2" colspan="2">Quelle</th>
+			<th rowspan="2">Freier<br>Bedarf</th>
 <!-- >>> th-synrcps <<< \-->
 <!-- >>> th-synrcp >>> -->
 			<th colspan="`repeat`">`name`</th>
@@ -66,7 +66,7 @@ main .mdmnd {
 		<tr class="sec-title `cat`">
 			<th class="show" onclick="toggleCat(this, '`cat`')"></th>
 			<th>`category`</th><th class="right">`have`</th><th class="right">?</th>
-			<th colspan="2" class="left">Free: `free`</th>
+			<th colspan="2" class="left">Platz: `free`</th>
 			<th></th>
 <!-- >>> needs <<< \-->
 <!-- >>> need >>> -->

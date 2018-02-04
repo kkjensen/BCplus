@@ -10,7 +10,7 @@
 –offline–
 <!-- <<< title-offline <<< \-->
 <!-- >>> title-online >>> -->
-CMDR `cmdr-name`
+KMDT `cmdr-name`
 <!-- <<< title-online <<< \-->
   </head>
   <body>
@@ -20,29 +20,29 @@ CMDR `cmdr-name`
 	  <h1>…offline…</h1>
 	</header>
 	<main class="center">
-	<p>Please boot up your main board computer systems to connect.</p>
+	<p>Starten Sie den Hauptcomputer des Schiffs um eine Verbindung herzustellen.</p>
 	<img src="s/img/EDLoader.svg" alt="loading…" style="margin-top:5em;">
 	</main>
 <!-- <<< body-offline <<< \-->
 <!-- >>> body-online >>> -->
 	<header>
 	<div id="base">
-	<p>CMDR `cmdr-name`<p>
+	<p>KMDT `cmdr-name`<p>
 	<p>`credits` Cr</p>
 	<p>`ship-name` / `ship-ident`</p>
 	<p>`ship-type`</p>
 	</div>
 	<div class="rank">
 		<img class="logo" src="s/rnk/combat/`rlvl-combat`.png">
-		<div><p>Combat: `rnk-combat`</p><p>`rlvl-combat`/8 +`rprg-combat`%</p></div>
+		<div><p>Kampf: `rnk-combat`</p><p>`rlvl-combat`/8 +`rprg-combat`%</p></div>
 	</div>
 	<div class="rank">
 		<img class="logo" src="s/rnk/trading/`rlvl-trade`.png">
-		<div><p>Trading: `rnk-trade`</p><p>`rlvl-trade`/8 +`rprg-trade`%</p></div>
+		<div><p>Handel: `rnk-trade`</p><p>`rlvl-trade`/8 +`rprg-trade`%</p></div>
 	</div>
 	<div class="rank">
 		<img class="logo" src="s/rnk/explorer/`rlvl-explorer`.png">
-		<div><p>Explorer: `rnk-explorer`</p><p>`rlvl-explorer`/8 +`rprg-explorer`%</p></div>
+		<div><p>Erkundung: `rnk-explorer`</p><p>`rlvl-explorer`/8 +`rprg-explorer`%</p></div>
 	</div>
 	<div class="rank">
 		<img class="logo" src="s/rnk/cqc/`rlvl-cqc`.png">
@@ -50,21 +50,21 @@ CMDR `cmdr-name`
 	</div>
 	<div class="locinfo">
 		<div style="text-align:center">
-			<img class="inlico btn" src="s/img/`home-flag`Home.png" title="Toggle Home System"
+			<img class="inlico btn" src="s/img/`home-flag`Home.png" title="Heimatsystem umschalten"
 			     onclick="tglHome()"><br>
-		   <img class="inlico btn" src="s/img/`dest-flag`Dest.png" title="Toggle Destination"
+		   <img class="inlico btn" src="s/img/`dest-flag`Dest.png" title="Ziel umschalten"
 		        onclick="tglDest()">
 		</div>&nbsp;
 		<div><p>`location`</p><p>`locx` / `locy` / `locz`</p></div>
-		<div style="margin-left:1em;"><p>Home: `home`</p><p>→ `homedist` Ly</p></div>
+		<div style="margin-left:1em;"><p>Heimat: `home`</p><p>→ `homedist` Ly</p></div>
 	</div>
 	<div class="rank" style="justify-content: center">
 		<img class="logo" src="s/fctn/feds.png" alt="Feds">
-		<div><p>Federation: `rlvl-fed`/14</p><p>`rnk-fed` +`rprg-fed`%</p></div>
+		<div><p>Föderation: `rlvl-fed`/14</p><p>`rnk-fed` +`rprg-fed`%</p></div>
 	</div>
 	<div class="rank" style="justify-content: center">
 		<img class="logo" src="s/fctn/imps.png" alt="Imps">
-		<div><p>Empire: `rlvl-imp`/14</p><p>`rnk-imp` +`rprg-imp`%</p></div>
+		<div><p>Imperium: `rlvl-imp`/14</p><p>`rnk-imp` +`rprg-imp`%</p></div>
 	</div>
 	</header>
 	<nav>
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	if (window["WebSocket"]) {
 		startWs()
 	} else {
-		alert("Your browser does not support WebSockets.")
+		alert("Kommandant: Dein Web Browser uterstützt keine Web-Sockets.")
 	}
 	decoAllSkbd();
 })

@@ -66,24 +66,24 @@ main tr:nth-of-type(even) {
   <main>
 </select>
 <!-- >>> topic >>> -->
-	<h1 id="dsthdr" class="hide" onclick="tglDstForm()">Destinations</h1>
+	<h1 id="dsthdr" class="hide" onclick="tglDstForm()">Ziele</h1>
 	<form id="addest" class="hide">
-		<label for="destnm"><span class="addest" onclick="addDst()">Add Destination</span>: <input type="text" id="destnm" size="20"></label>
-		<label for="destcoo">Coordinates: <input type="text" id="destcoo" size="24"></label>
-		<label for="desttags">Tags: <input type="text" id="desttags" size="30"></label>
-		<br><label for="destnts">Notes:<textarea id="destnts"></textarea></label>
+		<label for="destnm"><span class="addest" onclick="addDst()">Neues Ziel</span>: <input type="text" id="destnm" size="20"></label>
+		<label for="destcoo">Koordinaten: <input type="text" id="destcoo" size="24"></label>
+		<label for="desttags">Schlagworte: <input type="text" id="desttags" size="30"></label>
+		<br><label for="destnts">Notizen:<textarea id="destnts"></textarea></label>
 	</form>
-Plan with <select name="shipopt" onchange="selShip(value)">
+Planung mit <select name="shipopt" onchange="selShip(value)">
 <!-- >>> shipopts <<< \-->
 <!-- >>> shipopt >>> -->
-<option value="`id`">`ship` – `jump` Ly</option>
+<option value="`id`">`ship` – `jump` Lj</option>
 
 <!-- <<< shipopt <<< \-->
 <!-- >>> shipopt-sel >>> -->
-<option value="`id`" selected="selected">`ship` – `jump` Ly</option>
+<option value="`id`" selected="selected">`ship` – `jump` Lj</option>
 
 <!-- <<< shipopt-sel <<< \-->
-</select>: max=`lypj-max` / avg=`lypj-avg` Ly/Jump
+</select>: Max.=`lypj-max` / Mittel=`lypj-avg` Lj/Sprung
 <!--	Filter <fieldset id="tagf">
 	  <input type="radio" id="tfall" name="tagf" value="all">
 	  <label for="tfall">all</label>
@@ -96,13 +96,13 @@ Plan with <select name="shipopt" onchange="selShip(value)">
 </datalist -->	
 	<table id="dests" style="width:100%">
 		<thead><tr>
-			<th colspan="2">Destination</th>
-			<th>Distance</th>
+			<th colspan="2">Ziel</th>
+			<th>Entfernung</th>
 			<th>ETD</th>
 			<th>EJD</th>
-			<th>Coordinates</th>
-			<th>Note</th>
-			<th>Tags</th>
+			<th>Koordinaten</th>
+			<th>Notiz</th>
+			<th>Stichworte</th>
 		</tr></thead>
 		<tbody>
 <!-- >>> destinations <<< \-->
@@ -116,10 +116,10 @@ Plan with <select name="shipopt" onchange="selShip(value)">
 			   <span class="btn" onclick="editDst(this)">✍</span>
 			   &nbsp;
 				<img class="inlico btn" src="s/img/Trash.png"
-			        title="Double-click to Delete"
+			        title="Doppel-Click zum Löschen"
 			        ondblclick="delDst(`dst-id`)">
 			</td>
-			<td class="right">`dist` Ly</td>
+			<td class="right">`dist` Lj</td>
 			<td class="right">`etd`</td>
 			<td class="center">`ejd`</td>
 			<td class="center">`coox` / `cooy` / `cooz`</td>
@@ -130,14 +130,14 @@ Plan with <select name="shipopt" onchange="selShip(value)">
 <!-- <<< dest <<< \-->
 		</tbody>
 	</table>
-	<h1>Jump Statistics</h1>
+	<h1>FSD Sprung Statistik</h1>
 	<table id="jhist" style="width:100%">
 		<thead><tr>
-			<th>Last…</th>
-			<th colspan="2">Jump</th>
+			<th>Letzte…</th>
+			<th colspan="2">Sprung</th>
 <!-- >>> avg-heads <<< \-->
 <!-- >>> avg-heading >>> -->
-			<th colspan="2">`count` Jumps</th>
+			<th colspan="2">`count` Sprünge</th>
 
 <!-- <<< avg-heading <<< \-->
 		</tr></thead>

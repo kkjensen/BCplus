@@ -299,7 +299,7 @@ func emitJumpStats(btFrame *gx.BounT, times []time.Duration, paths, dists []floa
 	btAvgVal1 := gxtTrvlAvgVal1.NewBounT()
 	btAvgVal2 := gxtTrvlAvgVal2.NewBounT()
 	btFrame.BindGen(gxtTrvlFrame.AvgRows, func(wr io.Writer) (n int) {
-		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Distance / Path")
+		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Abstand / Weg")
 		btAvgRow.BindGen(gxtTrvlAvgRow.Vals, func(wr io.Writer) (n int) {
 			return emitAvgRels(wr, btAvgVal1, gxtTrvlAvgVal1.Data, dists, paths)
 		})
@@ -312,7 +312,7 @@ func emitJumpStats(btFrame *gx.BounT, times []time.Duration, paths, dists []floa
 				times)
 		})
 		n += btAvgRow.Emit(wr)
-		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Distance [Ly]")
+		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Abstand [Lj]")
 		btAvgRow.BindGen(gxtTrvlAvgRow.Vals, func(wr io.Writer) (n int) {
 			return emitAvgs(wr,
 				btAvgVal1, gxtTrvlAvgVal1.Data,
@@ -320,12 +320,12 @@ func emitJumpStats(btFrame *gx.BounT, times []time.Duration, paths, dists []floa
 				dists)
 		})
 		n += btAvgRow.Emit(wr)
-		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Distance [Ly/h]")
+		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Abstand [Lj/h]")
 		btAvgRow.BindGen(gxtTrvlAvgRow.Vals, func(wr io.Writer) (n int) {
 			return emitAvgSpeeds(wr, btAvgVal1, gxtTrvlAvgVal1.Data, dists, times)
 		})
 		n += btAvgRow.Emit(wr)
-		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Path [Ly]")
+		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Weg [Lj]")
 		btAvgRow.BindGen(gxtTrvlAvgRow.Vals, func(wr io.Writer) (n int) {
 			return emitAvgs(wr,
 				btAvgVal1, gxtTrvlAvgVal1.Data,
@@ -333,7 +333,7 @@ func emitJumpStats(btFrame *gx.BounT, times []time.Duration, paths, dists []floa
 				paths)
 		})
 		n += btAvgRow.Emit(wr)
-		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Path [Ly/h]")
+		btAvgRow.BindP(gxtTrvlAvgRow.Title, "Weg [Lj/h]")
 		btAvgRow.BindGen(gxtTrvlAvgRow.Vals, func(wr io.Writer) (n int) {
 			return emitAvgSpeeds(wr, btAvgVal1, gxtTrvlAvgVal1.Data, paths, times)
 		})
@@ -396,12 +396,12 @@ func emitDests(btFrame *gx.BounT, times []time.Duration, paths, dists []float64)
 		if curship != nil {
 			if theGame.TrvlPlanShip.Ship == curship {
 				btShipOptSel.BindP(gxtShipOptSel.Id, -1)
-				btShipOptSel.BindP(gxtShipOptSel.Ship, "Current ship")
+				btShipOptSel.BindP(gxtShipOptSel.Ship, "aktuellem Schiff")
 				btShipOptSel.BindFmt(gxtShipOptSel.Jump, "%.2f", curship.Jump.DistMax)
 				n += btShipOptSel.Emit(wr)
 			} else {
 				btShipOpt.BindP(gxtShipOpt.Id, -1)
-				btShipOpt.BindP(gxtShipOpt.Ship, "Current ship")
+				btShipOpt.BindP(gxtShipOpt.Ship, "aktuellem Schiff")
 				btShipOpt.BindFmt(gxtShipOpt.Jump, "%.2f", curship.Jump.DistMax)
 				n += btShipOpt.Emit(wr)
 			}
