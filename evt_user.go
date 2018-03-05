@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"sync"
 
 	c "github.com/CmdrVasquess/BCplus/cmdr"
@@ -29,6 +30,8 @@ func DispatchUser(lock *sync.RWMutex, state *c.GmState, event map[string]interfa
 			handler, _ = matUsrOps[oprtn]
 		case "synth":
 			handler, _ = synUsrOps[oprtn]
+		case "stng-macros":
+			handler, _ = stngMacros[oprtn]
 		}
 	}
 	if handler == nil {
@@ -56,6 +59,7 @@ var allUsrOps = map[string]userHanlder{
 	"skbd":    allSkbd,
 	"tglhome": allTglHome,
 	"tgldest": allTglDest,
+	"quit":    allQuit,
 }
 
 const (
@@ -106,5 +110,11 @@ func allSkbd(gstat *c.GmState, evt map[string]interface{}) (reload bool) {
 	txt, _ := attStr(evt, "str")
 	eulog.Logf(l.Trace, "sending as keyboard input: [%s]", txt)
 	robi.TypeStr(txt)
+	return false
+}
+
+func allQuit(gstat *c.GmState, evt map[string]interface{}) (reload bool) {
+	eulog.Logf(l.Debug, "user quit: signal %s", os.Interrupt)
+	signals <- os.Interrupt
 	return false
 }

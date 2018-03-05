@@ -42,13 +42,25 @@ func needTemplate(tmap map[string]*gx.Template, path string) *gx.Template {
 	}
 }
 
+func needStatic(tmap map[string]*gx.Template, path string) gx.Data {
+	t := needTemplate(tmap, path)
+	if raw, ok := t.Static(); ok {
+		return gx.Data(raw)
+	} else {
+		glog.Fatalf("no static content in template '%s'", t.Name)
+		return nil
+	}
+}
+
 var offlinePage []byte
+var denyPage []byte
 
 var gxtPage struct {
 	*gx.Template
 	PgTitle     []int `goxic:"title"`
 	Version     []int
 	Styles      []int `goxic:"dyn-styles"`
+	ScriptHdr   []int `goxic:"dyn-scripts"`
 	PgBody      []int `goxic:"body"`
 	FullVersion []int
 	ScriptEnd   []int
@@ -116,25 +128,29 @@ func loadTmpls() {
 	}
 	gx.MustIndexMap(&gxtPage, needTemplate(tmpls, ""), idxMapNames.Convert)
 	prepareOfflinePage(needTemplate(tmpls, "title-offline"),
-		needTemplate(tmpls, "body-offline"))
+		needTemplate(tmpls, "body-offline"),
+		needTemplate(tmpls, "body-deny"))
 	gx.MustIndexMap(&gxtTitle, needTemplate(tmpls, "title-online"), idxMapNames.Convert)
 	gx.MustIndexMap(&gxtFrame, needTemplate(tmpls, "body-online"), idxMapNames.Convert)
 	gx.MustIndexMap(&gxtNavItem, needTemplate(tmpls, "body-online/nav-item"), idxMapNames.Convert)
 	gx.MustIndexMap(&gxtNavActv, needTemplate(tmpls, "body-online/nav-actv"), idxMapNames.Convert)
+	loadDshbTemplates()
 	loadWebTkTemplates()
 	loadRescTemplates()
 	loadTrvlTemplates()
 	loadSynTemplates()
 	loadShpTemplates()
-	loadSysTemplates()
+	loadBdyTemplates()
+	loadSMcTemplates()
 }
 
-func prepareOfflinePage(title *gx.Template, body *gx.Template) {
+func prepareOfflinePage(title *gx.Template, tOffline, tDeny *gx.Template) {
 	btOffline := gxtPage.NewBounT()
 	if BCpBugfix == 0 {
-		btOffline.BindFmt(gxtPage.Version, "%d.%d", BCpMajor, BCpMinor)
+		btOffline.BindFmt(gxtPage.Version, "%d.%d%s", BCpMajor, BCpMinor, BCpQuality)
 	} else {
-		btOffline.BindFmt(gxtPage.Version, "%d.%d.%d", BCpMajor, BCpMinor, BCpBugfix)
+		btOffline.BindFmt(gxtPage.Version, "%d.%d.%d%s",
+			BCpMajor, BCpMinor, BCpBugfix, BCpQuality)
 	}
 	btOffline.BindP(gxtPage.FullVersion, gxw.HtmlEsc(BCpDescStr()))
 	if stat, ok := title.Static(); !ok {
@@ -142,18 +158,28 @@ func prepareOfflinePage(title *gx.Template, body *gx.Template) {
 	} else {
 		btOffline.BindP(gxtPage.PgTitle, string(stat))
 	}
-	if stat, ok := body.Static(); ok {
-		btOffline.BindP(gxtPage.PgBody, string(stat))
+	if stat, ok := tOffline.Static(); ok {
+		btOffline.Bind(gxtPage.PgBody, gx.Data(stat))
 	} else {
 		glog.Fatal("no offline body")
 	}
 	btOffline.Bind(gxtPage.Styles, gx.Empty)
+	btOffline.Bind(gxtPage.ScriptHdr, gx.Empty)
 	btOffline.Bind(gxtPage.ScriptEnd, gx.Empty)
-	fix := btOffline.Fixate()
-	if stat, ok := fix.Static(); ok {
+	if stat, ok := btOffline.Fixate().Static(); ok {
 		offlinePage = stat
 	} else {
-		panic("offline page not static")
+		glog.Fatal("offline page not static")
+	}
+	if stat, ok := tDeny.Static(); ok {
+		btOffline.Bind(gxtPage.PgBody, gx.Data(stat))
+	} else {
+		glog.Fatal("no deny body")
+	}
+	if stat, ok := btOffline.Fixate().Static(); ok {
+		denyPage = stat
+	} else {
+		glog.Fatal("deny page not static")
 	}
 }
 
@@ -162,12 +188,36 @@ func init() {
 }
 
 func offline(w http.ResponseWriter, r *http.Request, h func(http.ResponseWriter, *http.Request)) {
-	if theGame.IsOffline() {
+	if !primaryClient(r) {
+		w.Write(denyPage)
+	} else if theGame.IsOffline() {
 		w.Write(offlinePage)
 	} else {
 		theStateLock.RLock()
 		defer theStateLock.RUnlock()
 		h(w, r)
+	}
+}
+
+var wuiPCLient = ""
+
+func primaryClient(rq *http.Request) bool {
+	clt := rq.RemoteAddr
+	if sep := strings.LastIndex(clt, ":"); sep > 0 {
+		clt = clt[:sep]
+	}
+	if len(wuiPCLient) == 0 {
+		wuiPCLient = clt
+		glog.Logf(l.Info, "set primary client: %s", wuiPCLient)
+		return true
+	} else if clt != wuiPCLient {
+		glog.Logf(l.Warn,
+			"request from not primary client '%s' for '%s'",
+			clt,
+			rq.URL.String())
+		return false
+	} else {
+		return true
 	}
 }
 
@@ -182,9 +232,38 @@ func nmap(nm *namemap.FromTo, term string) gx.Content {
 	return gxw.EscHtml{gx.Print{str}}
 }
 
-func nmapU8(nm *namemap.FromTo, rank uint8) gx.Content {
-	str, _ := nm.Map(strconv.Itoa(int(rank)))
+func nmapI(nm *namemap.FromTo, rank int) gx.Content {
+	str, _ := nm.Map(strconv.Itoa(rank))
 	return gxw.EscHtml{gx.Print{str}}
+}
+
+// TODO should be taken from a package for localized input. Is there a reverse
+//      for golang/x/text/message?
+func parseDec(dstr string) (float64, error) {
+	lastCma := strings.LastIndex(dstr, ",")
+	lastDot := strings.LastIndex(dstr, ".")
+	if lastCma >= 0 {
+		frstCma := strings.Index(dstr, ",")
+		if lastDot < 0 {
+			if frstCma == lastCma {
+				dstr = strings.Replace(dstr, ",", ".", -1)
+			} else {
+				dstr = strings.Replace(dstr, ",", "", -1)
+			}
+		} else if lastDot < lastCma {
+			dstr = strings.Replace(dstr, ".", "", -1)
+			dstr = strings.Replace(dstr, ",", ".", -1)
+		} else {
+			dstr = strings.Replace(dstr, ",", "", -1)
+		}
+	} else if lastDot >= 0 {
+		frstDot := strings.Index(dstr, ".")
+		if frstDot != lastDot {
+			dstr = strings.Replace(dstr, ".", "", -1)
+		}
+	}
+	f, err := strconv.ParseFloat(dstr, 64)
+	return f, err
 }
 
 func pgLocStyleFix(tmpls map[string]*gx.Template) (res gx.Content) {
@@ -200,12 +279,25 @@ func pgLocStyleFix(tmpls map[string]*gx.Template) (res gx.Content) {
 	return res
 }
 
+func pgHdrScriptFix(tmpls map[string]*gx.Template) (res gx.Content) {
+	if hsrc, ok := tmpls["hdr-script"]; ok {
+		if raw, ok := hsrc.Static(); ok {
+			res = gx.Data(raw)
+		} else {
+			glog.Fatal("header-script template is not static content")
+		}
+	} else {
+		res = gx.Empty
+	}
+	return res
+}
+
 func pgEndScriptFix(tmpls map[string]*gx.Template) (res gx.Content) {
 	if escr, ok := tmpls["end-script"]; ok {
 		if raw, ok := escr.Static(); ok {
 			res = gx.Data(raw)
 		} else {
-			res = gx.Empty
+			glog.Fatal("end-script template is not static content")
 		}
 	} else {
 		res = gx.Empty
@@ -235,20 +327,22 @@ func emitNavItems(wr io.Writer, active string) (n int) {
 	return n
 }
 
-func preparePage(styles, endScript gx.Content, active string) (emit, bindto *gx.BounT, hook []int) {
+func preparePage(styles, hdrScript, endScript gx.Content, active string) (emit, bindto *gx.BounT, hook []int) {
 	cmdr := &theGame.Cmdr
 	cmdrNameEsc := gxw.HtmlEsc(cmdr.Name)
 	btPage := gxtPage.NewBounT()
 
 	btTitle := gxtTitle.NewBounT()
 	if BCpBugfix == 0 {
-		btPage.BindFmt(gxtPage.Version, "%d.%d", BCpMajor, BCpMinor)
+		btPage.BindFmt(gxtPage.Version, "%d.%d%s", BCpMajor, BCpMinor, BCpQuality)
 	} else {
-		btPage.BindFmt(gxtPage.Version, "%d.%d.%d", BCpMajor, BCpMinor, BCpBugfix)
+		btPage.BindFmt(gxtPage.Version, "%d.%d.%d%s",
+			BCpMajor, BCpMinor, BCpBugfix, BCpQuality)
 	}
 	btPage.BindP(gxtPage.FullVersion, gxw.HtmlEsc(BCpDescStr()))
 	btPage.Bind(gxtPage.PgTitle, gxw.EscHtml{btTitle})
 	btPage.Bind(gxtPage.Styles, styles)
+	btPage.Bind(gxtPage.ScriptHdr, hdrScript)
 	btTitle.BindP(gxtTitle.CmdrName, cmdrNameEsc)
 
 	//	btFrame := gxtFrame.NewInitBounT(gx.Empty)
@@ -270,22 +364,22 @@ func preparePage(styles, endScript gx.Content, active string) (emit, bindto *gx.
 		btFrame.BindP(gxtFrame.DestFlag, "no")
 	}
 
-	btFrame.Bind(gxtFrame.RnkCombat, nmapU8(&nmRnkCombat, cmdr.Ranks[c.RnkCombat]))
+	btFrame.Bind(gxtFrame.RnkCombat, nmapI(&nmRnkCombat, int(cmdr.Ranks[c.RnkCombat])))
 	btFrame.BindP(gxtFrame.RLvlCombat, cmdr.Ranks[c.RnkCombat])
 	btFrame.BindP(gxtFrame.RPrgCombat, cmdr.RnkPrgs[c.RnkCombat])
-	btFrame.Bind(gxtFrame.RnkTrade, nmapU8(&nmRnkTrade, cmdr.Ranks[c.RnkTrade]))
+	btFrame.Bind(gxtFrame.RnkTrade, nmapI(&nmRnkTrade, int(cmdr.Ranks[c.RnkTrade])))
 	btFrame.BindP(gxtFrame.RLvlTrade, cmdr.Ranks[c.RnkTrade])
 	btFrame.BindP(gxtFrame.RPrgTrade, cmdr.RnkPrgs[c.RnkTrade])
-	btFrame.Bind(gxtFrame.RnkExplor, nmapU8(&nmRnkExplor, cmdr.Ranks[c.RnkExplore]))
+	btFrame.Bind(gxtFrame.RnkExplor, nmapI(&nmRnkExplor, int(cmdr.Ranks[c.RnkExplore])))
 	btFrame.BindP(gxtFrame.RLvlExplor, cmdr.Ranks[c.RnkExplore])
 	btFrame.BindP(gxtFrame.RPrgExplor, cmdr.RnkPrgs[c.RnkExplore])
-	btFrame.Bind(gxtFrame.RnkCqc, nmapU8(&nmRnkCqc, cmdr.Ranks[c.RnkCqc]))
+	btFrame.Bind(gxtFrame.RnkCqc, nmapI(&nmRnkCqc, int(cmdr.Ranks[c.RnkCqc])))
 	btFrame.BindP(gxtFrame.RLvlCqc, cmdr.Ranks[c.RnkCqc])
 	btFrame.BindP(gxtFrame.RPrgCqc, cmdr.RnkPrgs[c.RnkCqc])
-	btFrame.Bind(gxtFrame.RnkFed, nmapU8(&nmRnkFed, cmdr.Ranks[c.RnkFed]))
+	btFrame.Bind(gxtFrame.RnkFed, nmapI(&nmRnkFed, int(cmdr.Ranks[c.RnkFed])))
 	btFrame.BindP(gxtFrame.RLvlFed, cmdr.Ranks[c.RnkFed])
 	btFrame.BindP(gxtFrame.RPrgFed, cmdr.RnkPrgs[c.RnkFed])
-	btFrame.Bind(gxtFrame.RnkImp, nmapU8(&nmRnkImp, cmdr.Ranks[c.RnkImp]))
+	btFrame.Bind(gxtFrame.RnkImp, nmapI(&nmRnkImp, int(cmdr.Ranks[c.RnkImp])))
 	btFrame.BindP(gxtFrame.RLvlImp, cmdr.Ranks[c.RnkImp])
 	btFrame.BindP(gxtFrame.RPrgImp, cmdr.RnkPrgs[c.RnkImp])
 	if cmdr.Loc.Ref == nil {
@@ -305,7 +399,7 @@ func preparePage(styles, endScript gx.Content, active string) (emit, bindto *gx.
 		btFrame.Bind(gxtFrame.ShipName, webGuiNOC)
 		btFrame.Bind(gxtFrame.ShipIdent, webGuiNOC)
 	} else {
-		btFrame.Bind(gxtFrame.ShipType, nmap(&nmShipType, cshp.Type))
+		btFrame.BindP(gxtFrame.ShipType, namemap.IgnDom(nmShipType.MapNm(cshp.Type, "lang:")))
 		if len(cshp.Name) == 0 {
 			btFrame.Bind(gxtFrame.ShipName, webGuiNOC)
 		} else {
@@ -346,29 +440,68 @@ func activeTopic(r *http.Request) (res string) {
 }
 
 func runWebGui() {
-	htfs := http.FileServer(http.Dir(assetPath("s")))
-	http.Handle("/s/", http.StripPrefix("/s", htfs))
+	htStatic := http.FileServer(http.Dir(assetPath("s")))
+	http.Handle("/s/", http.StripPrefix("/s", htStatic))
+	htDoc := http.FileServer(http.Dir(docsPath))
+	http.Handle("/doc/", http.StripPrefix("/doc", htDoc))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		offline(w, r, wuiDashboard)
 	})
 	go wscHub()
 	http.HandleFunc("/ws", serveWs)
-	setupTopic("dashboard", wuiDashboard)
+	//setupTopic("dashboard", wuiDashboard)
 	setupTopic("ships", wuiShp)
 	setupTopic("travel", wuiTravel)
-	setupTopic("system", wuiSys)
+	setupTopic("bodies", wuiBdys)
 	setupTopic("materials", wuiMats)
 	setupTopic("synth", wuiSyn)
+	http.HandleFunc("/set-macros", func(w http.ResponseWriter, r *http.Request) {
+		offline(w, r, suiMacros)
+	})
 	glog.Logf(l.Info, "Starting web GUI on port %d", webGuiPort)
 	go http.ListenAndServe(fmt.Sprintf(":%d", webGuiPort), nil)
+	var potAddrs []string
 	ifaddrs, _ := net.InterfaceAddrs()
 	for _, addr := range ifaddrs {
-		if nip, ok := addr.(*net.IPNet); ok && !nip.IP.IsLoopback() && nip.IP.To4() != nil {
-			glog.Logf(l.Info,
-				"for web GUI open 'http://%s:%d/' in your browser",
-				nip.IP.String(),
-				webGuiPort)
-			break
+		if nip, ok := addr.(*net.IPNet); ok {
+			if nip.IP.IsLoopback() {
+				continue
+			}
+			if ip := nip.IP.To4(); ip != nil {
+				potAddrs = append(potAddrs, nip.IP.String())
+			} else if ip := nip.IP.To16(); ip != nil {
+				potAddrs = append(potAddrs, fmt.Sprintf("[%s]", nip.IP.String()))
+			}
+			//			; ok && !nip.IP.IsLoopback() && nip.IP.To4() != nil {
+			//			glog.Logf(l.Info,
+			//				"for web GUI open 'http://%s:%d/' in your browser",
+			//				nip.IP.String(),
+			//				webGuiPort)
+			//			break
 		}
 	}
+	switch len(potAddrs) {
+	case 0:
+		glog.Log(l.Warn,
+			"Keine IP-Adresse für BC+ gefunden. Bitte Netzwerkkonfiguration prüfen.")
+		glog.Logf(l.Warn,
+			"- Test der lokalen Web GUI über 'http://localhost:%d/",
+			webGuiPort)
+	case 1:
+		glog.Logf(l.Info,
+			"Zugriff auf Web GUI über 'http://%s:%d/' in your browser",
+			potAddrs[0],
+			webGuiPort)
+	default:
+		glog.Logf(l.Info,
+			"BC+ hat %d IP-Adressen gefunden. Möglicher URLs für Web GUI:",
+			len(potAddrs))
+		for _, addr := range potAddrs {
+			glog.Logf(l.Info,
+				"- 'http://%s:%d/'",
+				addr,
+				webGuiPort)
+		}
+	}
+	glog.Log(l.Warn, "Bitte Firewall prüfen. BC+ darf nicht blockiert werden!")
 }

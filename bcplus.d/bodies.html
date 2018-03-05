@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="s/css/bcp.css">
+<!-- >>> local-style >>> -->
+	<style>
+main span.mneed { color: var(--colGood); }
+main div.star {
+	display: grid;
+	grid-template-columns: 2em 6em 4em 8em repeat(4, auto);
+	/*grid-gap: .2em;*/
+	margin-top: .2em;
+	margin-bottom: .2em;
+}
+main div.star span { background-color: var(--tblOdd); }
+main div.belt {
+	display: grid;
+	grid-template-columns: 2em 6em 4em 8em auto;
+	/*grid-gap: .2em;*/
+	margin-top: .2em;
+	margin-bottom: .2em;
+}
+main div.belt span { background-color: var(--tblOdd); }
+main div.planet {
+	display: grid;
+	grid-template-columns: 2em 6em 4em 8em repeat(3, auto);
+	/*grid-gap: .2em;*/
+	margin-top: .2em;
+	margin-bottom: .2em;
+}
+main div.planet span { background-color: var(--tblOdd); }
+main div.planet span.matls {
+	grid-column: 2 / span 5;
+}
+main div.planet .bs { background-color: var(--colBkg); }
+	</style>
+<!-- <<< local-style <<< -->	
+  </head>
+  <body>
+  <main>
+<!-- >>> topic >>> -->
+	<h1>Objekte im lokalen System</h1>
+<!-- >>> bodies <<< \-->
+<!-- >>> bdy-none >>> -->
+		<p>Keine Objekt Scans für dieses system</p>
+<!-- <<< bdy-none <<< \-->
+<!-- >>> bdy-star >>> -->
+	<div class="star">
+		<span class="center">☼</span>
+		<span style="grid-column:span 2">`name`</span>
+		<span>Sternenklasse</span>
+		<span>`dist`&nbsp;ls</span>
+		<span>Scoopable</span>
+		<span>Sternenmassen</span>
+		<span>Oberf. Tempr</span>
+<!-- >>> rings <<< \-->
+	</div>
+<!-- <<< bdy-star <<< \-->
+<!-- >>> bdy-belt >>> -->
+	<div class="belt">
+		<span class="center">∵</span>
+		<span style="grid-column:span 2">`name`</span>
+		<span></span>
+		<span>`dist`&nbsp;ls</span>
+	</div>
+<!-- <<< bdy-belt <<< \-->
+<!-- >>> bdy-planet >>> -->
+	<div class="planet">
+		<span class="center">❍</span>
+		<span style="grid-column:span 2">`name`</span>
+		<span>Planet Typ</span>
+		<span>`dist`&nbsp;ls</span>
+		<span title="<500km => Geyser?">Radius:&nbsp;`r`km</span>
+		<span title="<1d => Geyser?">t Umlauf</span>
+<!-- >>> materials <<< \-->
+<!-- >>> rings <<< \-->
+<!-- >>> mat-section >>> -->
+		<span class="bs" style="grid-column:2;text-align: right;">Material:&nbsp;</span>
+		<span class="bs" style="grid-column:span 5">`mats`</span>
+<!-- <<< mat-section <<< \-->
+<!-- >>> mat0 >>> -->
+<span class="bs `class`">`name`: `frac`%</span>
+<!-- <<< mat0 <<< -->
+<!-- >>> mat1 >>> -->
+, <span class="bs `class`">`name`: `frac`%</span>
+<!-- <<< mat1 <<< \-->
+	</div>
+<!-- <<< bdy-planet <<< \-->
+<!-- >>> ring-section >>> -->
+		<span style="grid-column:2;text-align: right;">Ring:</span>
+		<span>Name</span>
+		<span>Klasse z.B.</span>
+		<span>Reserve: pristine</span>
+		<span>Masse [Mt]</span>
+<!-- <<< ring-section <<< \-->
+<!-- <<< topic <<< -->
+  </main>
+  </body>
+</html>

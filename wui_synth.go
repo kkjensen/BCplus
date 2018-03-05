@@ -143,7 +143,7 @@ func recipeBuilds(recipe *gxy.Synthesis) (res []int) {
 		build := -1
 		for nmat, need := range lvl.Demand {
 			cmat := cmdr.Material(nmat)
-			if cmat == nil || cmat.Have <= int16(need) {
+			if cmat == nil || cmat.Have < int16(need) {
 				build = 0
 				break
 			} else if tmp := uint(cmat.Have) / need; build < 0 || int(tmp) < build {
@@ -161,7 +161,7 @@ func recipeBuilds(recipe *gxy.Synthesis) (res []int) {
 
 func wuiSyn(w http.ResponseWriter, r *http.Request) {
 	cmdr := &theGame.Cmdr
-	btEmit, btBind, hook := preparePage(dynSynStyles, gx.Empty, activeTopic(r))
+	btEmit, btBind, hook := preparePage(dynSynStyles, gx.Empty, gx.Empty, activeTopic(r))
 	btFrame := gxtSynFrame.NewBounT()
 	btBind.Bind(hook, btFrame)
 	btFrame.BindGen(gxtSynFrame.Recipes, func(wr io.Writer) (n int) {
@@ -247,6 +247,6 @@ func synUsrOpMdmnd(gstat *c.GmState, evt map[string]interface{}) (reload bool) {
 	eulog.Logf(l.Debug, "synthesis set manual demand: id%d/%d=%d", rcpid, lvl, count)
 	synth := &theGalaxy.Synth[rcpid]
 	cmdr := &gstat.Cmdr
-	cmdr.NeedSynth(synth, uint(lvl)-1, uint(count))
+	cmdr.NeedsSynth(synth, uint(lvl)-1, uint(count))
 	return false
 }

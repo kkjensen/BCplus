@@ -1,4 +1,4 @@
-<!doctype html>
+c<!doctype html>
 <html lang="de">
   <head>
     <meta charset="utf-8">
@@ -36,16 +36,8 @@ main .mdmnd {
 	<table>
 		<tr> 
 			<th rowspan="2">⌬</th><th rowspan="2">Material</th>
-			<th rowspan="2"><select id="flt-have" onchange="reFilter()">
-				<option value="alor">Alle</option>
-				<option value="alnd">Alle und</option>
-				<option value="hvnd">Vorh. und</option>
-				<option value="hvor">Vorh. oder</option>
-				<option value="nond">Keine und</option>
-				<option value="noor">Keine oder</option>
-			</select></th>
-			<th rowspan="2"><input id="flt-need" type="checkbox" name="shwnd" checked
-			                       onchange="reFilter()">Bedarf</th>
+			<th>Vorh.</th>
+			<th>Bedarf</th>
 			<th rowspan="2" colspan="2">Quelle</th>
 			<th rowspan="2">Freier<br>Bedarf</th>
 <!-- >>> th-synrcps <<< \-->
@@ -55,6 +47,16 @@ main .mdmnd {
 <!-- <<< th-synrcp <<< \-->
 		</tr>
 		<tr>
+			<th><select id="flt-have" onchange="reFilter()">
+				<option value="alor">Alles!</option>
+				<option value="miss">Fehlt!</option>
+				<option value="alnd">Falls</option>
+				<option value="hvnd">Vorh. und</option>
+				<option value="hvor">Vorh. oder</option>
+				<option value="nond">Kein und</option>
+				<option value="noor">Kein oder</option>
+			</select></th>
+			<th><input id="flt-need" type="checkbox" name="shwnd" onchange="reFilter()"></th>
 <!-- >>> th-synlvls <<< \-->
 <!-- >>> th-synlvl >>> -->
 			<th>`count`&times;`level`</th>
@@ -66,22 +68,22 @@ main .mdmnd {
 		<tr class="sec-title `cat`">
 			<th class="show" onclick="toggleCat(this, '`cat`')"></th>
 			<th>`category`</th><th class="right">`have`</th><th class="right">?</th>
-			<th colspan="2" class="left">Platz: `free`</th>
+			<th colspan="2" class="left"></th>
 			<th></th>
 <!-- >>> needs <<< \-->
 <!-- >>> need >>> -->
 			<th>`need`</th>
 
-<!-- <<< need <<< -->
+<!-- <<< need <<< \-->
 		</tr>
 
 <!-- <<< sec-title <<< \-->
 <!-- >>> sec-row >>> -->
 		<tr class="`cat`" id="`mat-id`">
  	  		<td class="center"><img class="inlico" src="s/mat/g`mat-grade`.png"></td>			
- 	  		<td><a target="BCPxref"
+ 	  		<td><a target="bcp-xref"
  	  		       href="http://elite-dangerous.wikia.com/wiki/`xref`">`name`</a></td>
- 	  		<td class="right">`have`</td>
+ 	  		<td class="right" title="Max: `max`">`have`</td>
  	  		<td class="right">`need`</td>
 <!-- >>> source <<< \-->
 			<td class="right"><input class="mdmnd" type="number" min="0" value="`need`"
@@ -115,8 +117,8 @@ var initFilterNeed = `flt-need`;
 <!-- >>> hide-cat >>> -->
 hideCat('`cat`');
 
-<!-- <<< hide-cat <<< -->
-<!-- <<< end-script <<< -->
+<!-- <<< hide-cat <<< \-->
+<!-- <<< end-script <<< \-->
   </main>
   </body>
 </html>

@@ -68,9 +68,11 @@ type GmState struct {
 	TrvlPlanShip ShipRef
 	JumpHist     []*Jump         `json:",omitempty"`
 	MatCatHide   map[string]bool `json:",omitempty"`
+	TrvlDstTgAll bool
+	TrvlDstTags  []string
 	MatFlt       MatFilter
-	EvtBacklog   []map[string]interface{} `json:-`
-	Next1stJump  bool                     `json:-`
+	EvtBacklog   []map[string]interface{} `json:"-"`
+	Next1stJump  bool                     `json:"-"`
 	Creds        *CmdrCreds
 }
 
@@ -116,7 +118,7 @@ func (stat *GmState) AddJump(ssys *gxy.StarSys, t Timestamp) {
 		panic("new jump in history without star system")
 	}
 	hist := append(stat.JumpHist, nil)
-	newJump := &Jump{stat.Next1stJump, SysRef{ssys}, t}
+	newJump := &Jump{First: stat.Next1stJump, Sys: SysRef{ssys}, Arrive: t}
 	i := len(hist) - 2
 	for i >= 0 {
 		if !time.Time(t).Before(time.Time(hist[i].Arrive)) {
@@ -352,14 +354,26 @@ func NewCommander() *Commander {
 	return &res
 }
 
-func (cmdr *Commander) NeedSynth(syn *gxy.Synthesis, lvl uint, count uint) {
+func (cmdr *Commander) NeedsSynth(syn *gxy.Synthesis, lvl uint, count uint) {
 	key := MkSynthRef(syn, int(lvl))
 	if count == 0 {
 		delete(cmdr.Synth, key)
 	} else {
-		log.Logf(l.Info, "set syref %s = %d", string(key), count)
+		log.Logf(l.Debug, "set synth-ref %s = %d", string(key), count)
 		cmdr.Synth[key] = count
 	}
+}
+
+func (cmdr *Commander) NeedsMat(jName string) (res int) {
+	if mat := cmdr.Material(jName); mat != nil && mat.Need > 0 {
+		res += int(mat.Need)
+	}
+	for sRef, no := range cmdr.Synth {
+		recipe, lvl := sRef.Get()
+		mps := recipe.Levels[lvl].Demand[jName]
+		res += int(mps * no)
+	}
+	return res
 }
 
 func (cmdr *Commander) ShipById(shipId int) *Ship {
@@ -476,13 +490,45 @@ type JumpStats struct {
 	BoostCount int
 }
 
+type ModClass int8
+type ModRating int8
+
+const (
+	MOD_E ModRating = iota
+	MOD_D
+	MOD_C
+	MOD_B
+	MOD_A
+)
+
+type Module interface {
+	Class() ModClass
+	Rating() ModRating
+}
+
+type module struct {
+	cls ModClass
+	rtg ModRating
+}
+
+func (m *module) Class() ModClass   { return m.cls }
+func (m *module) Rating() ModRating { return m.rtg }
+
 type Ship struct {
-	ID     int
-	Type   string
-	Name   string
-	Ident  string
-	Bought *Timestamp `json:",omitempty"`
-	Sold   *Timestamp `json:",omitempty"`
-	Loc    LocRef     `json:"Location,omitempty"`
-	Jump   JumpStats
+	ID       int
+	Type     string
+	Name     string
+	Ident    string
+	Bought   *Timestamp `json:",omitempty"`
+	Sold     *Timestamp `json:",omitempty"`
+	Loc      LocRef     `json:"Location,omitempty"`
+	Jump     JumpStats
+	Armor    *module
+	PowPlant *module
+	Thrusts  *module
+	Fsd      *module
+	LifeSupp *module
+	PowDistr *module
+	Sens     *module
+	FuleTank *module
 }

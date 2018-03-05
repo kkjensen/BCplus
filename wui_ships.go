@@ -47,7 +47,7 @@ func loadShpTemplates() {
 }
 
 func wuiShp(w http.ResponseWriter, r *http.Request) {
-	btEmit, btBind, hook := preparePage(gx.Empty, gx.Empty, activeTopic(r))
+	btEmit, btBind, hook := preparePage(gx.Empty, gx.Empty, gx.Empty, activeTopic(r))
 	btFrame := gxtShpFrame.NewBounT()
 	btBind.Bind(hook, btFrame)
 	btCShip := gxtCShip.NewBounT()
@@ -55,10 +55,11 @@ func wuiShp(w http.ResponseWriter, r *http.Request) {
 	cmdr := &theGame.Cmdr
 	btFrame.BindGen(gxtShpFrame.CurShips, func(wr io.Writer) (n int) {
 		for _, ship := range cmdr.Ships {
-			if ship.Sold != nil || ship.Type == "testbuggy" {
+			kind, _ := nmShipType.MapNm(ship.Type, "kind")
+			if ship.Sold != nil || kind != "S" {
 				continue
 			}
-			shTy, _ := nmShipType.Map(ship.Type)
+			shTy, _ := nmShipType.MapNm(ship.Type, "lang:")
 			btCShip.BindP(gxtCShip.Ident, gxw.HtmlEsc(ship.Ident))
 			btCShip.BindP(gxtCShip.Name, gxw.HtmlEsc(ship.Name))
 			btCShip.BindP(gxtCShip.Type, gxw.HtmlEsc(shTy))
@@ -67,7 +68,7 @@ func wuiShp(w http.ResponseWriter, r *http.Request) {
 				btCShip.Bind(gxtCShip.Loc, webGuiNOC)
 				btCShip.Bind(gxtCShip.Dist, webGuiNOC)
 			} else {
-				btCShip.BindP(gxtCShip.Loc, gxw.HtmlEsc(ship.Loc.String()))
+				btCShip.Bind(gxtCShip.Loc, CntLoc{ship.Loc.Ref}) //gxw.HtmlEsc(ship.Loc.String()))
 				btCShip.Bind(gxtCShip.Dist,
 					gxm.Msg(wuiL7d, "%.2f", gxy.Dist(ship.Loc.Ref, cmdr.Loc.Ref)))
 			}

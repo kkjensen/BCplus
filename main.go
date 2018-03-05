@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	c "github.com/CmdrVasquess/BCplus/cmdr"
 	gxy "github.com/CmdrVasquess/BCplus/galaxy"
+	edsm "github.com/CmdrVasquess/goEDSM"
 	"github.com/fractalqb/namemap"
 	l "github.com/fractalqb/qblog"
 )
@@ -21,6 +23,7 @@ import (
 func init() {
 	assetPathRoot = os.Args[0]
 	assetPathRoot = filepath.Dir(filepath.Clean(assetPathRoot))
+	docsPath = filepath.Join(assetPathRoot, "docs")
 	assetPathRoot = filepath.Join(assetPathRoot, "bcplus.d")
 	var err error
 	if assetPathRoot, err = filepath.Abs(assetPathRoot); err != nil {
@@ -57,7 +60,6 @@ func init() {
 		Verify("imperial ranks", "std → lang:")
 	nmShipType = namemap.MustLoad(assetPath("nm/shiptype.xsx")).
 		FromStd().
-		To(false, "lang:").
 		Verify("ship types", "std → lang:")
 	nmMatType = namemap.MustLoad(assetPath("nm/resctypes.xsx")).
 		FromStd().
@@ -70,6 +72,8 @@ func init() {
 	nmMatsXRef = nmMats.Base().FromStd().To(false, "wikia")
 	nmMatsId = nmMats.Base().FromStd().To(false, "id")
 	nmMatsIdRev = nmMats.Base().From("id", false).To(true)
+	nmMatGrade = namemap.MustLoad(assetPath("nm/matgrade.xsx")).FromStd()
+	nmMGrdRaw = nmMatGrade.Base().DomainIdx("raw")
 	nmBdyCats = namemap.MustLoad(assetPath("nm/body-cats.xsx")).
 		FromStd().
 		To(false, "lang:").
@@ -90,9 +94,13 @@ var theGalaxy *gxy.Galaxy
 var theGame = c.NewGmState()
 var credsKey []byte
 var eventq = make(chan bcEvent, 128)
+var signals = make(chan os.Signal, 1)
+
+var theEdsm = edsm.NewService()
 
 var jrnlDir string
 var dataDir string
+var enableJMacros bool
 
 var nmNavItem namemap.FromTo
 var nmRnkCombat namemap.FromTo
@@ -101,7 +109,7 @@ var nmRnkExplor namemap.FromTo
 var nmRnkCqc namemap.FromTo
 var nmRnkFed namemap.FromTo
 var nmRnkImp namemap.FromTo
-var nmShipType namemap.FromTo
+var nmShipType namemap.From
 var nmMatType namemap.FromTo
 var nmMats namemap.FromTo
 var nmMatsXRef namemap.FromTo
@@ -109,14 +117,18 @@ var nmMatsId namemap.FromTo
 var nmMatsIdRev namemap.FromTo
 var nmBdyCats namemap.FromTo
 var nmSynthLvl namemap.FromTo
+var nmMatGrade namemap.From
+var nmMGrdRaw int
 
 //go:generate ./genversion.sh
 func BCpDescribe(wr io.Writer) {
-	fmt.Fprintf(wr, "CMDR Vasquess: BC+ v%d.%d.%d / %s (%s)",
+	fmt.Fprintf(wr, "BoardComputer+ v%d.%d.%d%s / %s on %s (%s)",
 		BCpMajor,
 		BCpMinor,
 		BCpBugfix,
+		BCpQuality,
 		runtime.Version(),
+		runtime.GOOS,
 		BCpDate)
 }
 
@@ -153,6 +165,7 @@ func saveState(beta bool) {
 		}
 	}
 	theGalaxy.Close()
+	saveMacros(filepath.Join(dataDir, "macros.xsx"))
 }
 
 func loadCreds(cmdrNm string) error {
@@ -198,6 +211,7 @@ func loadState(cmdrNm string, beta bool) bool {
 		defer r.Close()
 		theGame.Load(r)
 		if len(credsKey) > 0 {
+			// TODO
 		}
 		return true
 	} else {
@@ -205,7 +219,10 @@ func loadState(cmdrNm string, beta bool) bool {
 	}
 }
 
-var assetPathRoot string
+var (
+	docsPath      string
+	assetPathRoot string
+)
 
 func assetPath(relPathSlash string) string {
 	relPathSlash = filepath.FromSlash(relPathSlash)
@@ -228,7 +245,7 @@ func eventLoop() {
 						glog.Logf(l.Error, "journal event error: %s", r)
 					}
 				}()
-				DispatchJournal(&theStateLock, theGame, e.data.([]byte))
+				dispatchJournal(&theStateLock, theGame, e.data.([]byte))
 			}()
 		case esrcUsr:
 			func() {
@@ -255,7 +272,10 @@ func main() {
 	verybose := flag.Bool("vv", false, "Sehr ausführliches logging")
 	flag.BoolVar(&acceptHistory, "hist", false, "Akzeptiere vergangene Ereignisse")
 	loadCmdr := flag.String("cmdr", "", "Lade beim Start die Daten des Kommandanten")
-	promptKey := flag.Bool("pmk", false, "prompt for credential master key")
+	promptKey := flag.Bool("pmk", false, "Master Key für sensible Daten angeben")
+	flag.DurationVar(&macroPause, "mcrp", 60*time.Millisecond,
+		"Pause zwischen Makro Elementen einstellen")
+	flag.BoolVar(&enableJMacros, "jmacros", true, "Schalter für Journal Macros")
 	showHelp := flag.Bool("h", false, "Zeige Hilfe an")
 	flag.Parse()
 	if *showHelp {
@@ -269,9 +289,7 @@ func main() {
 	} else if *verbose {
 		glog.SetLevel(l.Debug)
 	}
-	glog.Logf(l.Info, "Bordcomputer+ (%d.%.d.%d %s) on: %s\n",
-		BCpMajor, BCpMinor, BCpBugfix, BCpDate,
-		runtime.GOOS)
+	glog.Logf(l.Info, BCpDescStr())
 	glog.Logf(l.Info, "data    : %s\n", dataDir)
 	var err error
 	if *promptKey {
@@ -284,6 +302,7 @@ func main() {
 		}
 	}
 	glog.Logf(l.Info, "journals: %s\n", jrnlDir)
+	loadMacros(filepath.Join(dataDir, "macros.xsx"))
 	theGalaxy, err = gxy.OpenGalaxy(
 		filepath.Join(dataDir, "systems.json"),
 		assetPath("data/"))
@@ -302,9 +321,8 @@ func main() {
 	})
 	go eventLoop()
 	runWebGui()
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt)
-	<-sigs
+	signal.Notify(signals, os.Interrupt)
+	<-signals
 	stopWatch <- true
 	glog.Log(l.Info, "BC+ interrupted")
 	theStateLock.RLock()
